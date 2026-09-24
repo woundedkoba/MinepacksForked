@@ -23,7 +23,6 @@ import at.pcgamingfreaks.Bukkit.Message.MessageBuilder;
 import at.pcgamingfreaks.Message.MessageColor;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import at.pcgamingfreaks.Minepacks.Bukkit.Permissions;
-import at.pcgamingfreaks.Reflection;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -76,7 +75,7 @@ public class NoDatabaseWorker extends SpecialInfoBase implements CommandExecutor
 				try
 				{
 					plugin.getConfiguration().reload();
-					Reflection.getMethod(plugin.getClass(), "load").invoke(plugin);
+					plugin.loadServices();
 				}
 				catch(Exception e)
 				{

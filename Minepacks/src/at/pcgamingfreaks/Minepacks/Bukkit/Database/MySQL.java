@@ -17,21 +17,19 @@
 
 package at.pcgamingfreaks.Minepacks.Bukkit.Database;
 
-import at.pcgamingfreaks.Database.ConnectionProvider.ConnectionProvider;
 import at.pcgamingfreaks.Database.ConnectionProvider.MySQLConnectionProvider;
 import at.pcgamingfreaks.Database.DBTools;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 public class MySQL extends SQL
 {
-	public MySQL(@NotNull Minepacks plugin, @Nullable ConnectionProvider connectionProvider)
+	public MySQL(@NotNull Minepacks plugin)
 	{
-		super(plugin, (connectionProvider == null) ? new MySQLConnectionProvider(plugin.getLogger(), plugin.getDescription().getName(), plugin.getConfiguration()) : connectionProvider);
+		super(plugin, new MySQLConnectionProvider(plugin.getLogger(), plugin.getDescription().getName(), plugin.getConfiguration()));
 	}
 
 	@Override

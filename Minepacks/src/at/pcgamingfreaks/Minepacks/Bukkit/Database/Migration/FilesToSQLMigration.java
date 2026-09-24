@@ -18,71 +18,83 @@
 package at.pcgamingfreaks.Minepacks.Bukkit.Database.Migration;
 
 import at.pcgamingfreaks.Minepacks.Bukkit.Database.Files;
+import at.pcgamingfreaks.Minepacks.Bukkit.Database.BackpackFileStore;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class FilesToSQLMigration extends ToSQLMigration
 {
 	private final @Language("SQL") String queryInsertUsers, queryInsertBackpacks;
 	private final File saveFolder;
 
-	protected FilesToSQLMigration(@NotNull Minepacks plugin, @NotNull Files oldDb, @NotNull String dbType, boolean global) throws Exception
+	protected FilesToSQLMigration(@NotNull Minepacks plugin, @NotNull Files oldDb, @NotNull String dbType) throws Exception
 	{
-		super(plugin, oldDb, dbType, global);
+		super(plugin, oldDb, dbType);
 		saveFolder = new File(this.plugin.getDataFolder(), Files.FOLDER_NAME);
 
-		queryInsertUsers = replacePlaceholders(newDb, "INSERT INTO {TablePlayers} ({FieldUUID},{FieldName}) VALUES (?,?);");
-		queryInsertBackpacks = replacePlaceholders(newDb, "INSERT INTO {TableBackpacks} ({FieldBPOwner},{FieldBPITS},{FieldBPVersion}) VALUES (?,?,?);");
+		queryInsertUsers = newDb.formatMigrationQuery("INSERT INTO {TablePlayers} ({FieldUUID},{FieldName}) VALUES (?,?);");
+		queryInsertBackpacks = newDb.formatMigrationQuery("INSERT INTO {TableBackpacks} ({FieldBPOwner},{FieldBPITS},{FieldBPVersion}) VALUES (?,?,?);");
 	}
 
 	@Override
-	public @Nullable MigrationResult migrate() throws Exception
+	public @NotNull MigrationResult migrate() throws Exception
 	{
 		File[] allFiles = saveFolder.listFiles((dir, name) -> name.endsWith(Files.EXT));
-		if(allFiles == null) return null;
+		try
+		{
+			if(allFiles == null) throw new IOException("Unable to list backpack files in " + saveFolder);
+			return migrateFiles(allFiles);
+		}
+		finally
+		{
+			newDb.close();
+		}
+	}
+
+	private MigrationResult migrateFiles(File[] allFiles) throws Exception
+	{
 		try(Connection connection = newDb.getConnection(); PreparedStatement statementInsertUser = connection.prepareStatement(queryInsertUsers, PreparedStatement.RETURN_GENERATED_KEYS);
 		    PreparedStatement statementInsertBackpack = connection.prepareStatement(queryInsertBackpacks))
 		{
-			int migrated = 0;
-			for(File file : allFiles)
+			connection.setAutoCommit(false);
+			try
 			{
-				String name = file.getName().substring(0, file.getName().length() - Files.EXT.length());
-				statementInsertUser.setString(1, name);
-				statementInsertUser.setString(2, "UNKNOWN");
-				statementInsertUser.executeUpdate();
-				try(ResultSet rs = statementInsertUser.getGeneratedKeys())
+				int migrated = 0;
+				for(File file : allFiles)
 				{
-					if(rs.next())
+					BackpackFileStore.StoredBackpack stored = BackpackFileStore.read(file);
+					String name = file.getName().substring(0, file.getName().length() - Files.EXT.length());
+					statementInsertUser.setString(1, name);
+					statementInsertUser.setString(2, "UNKNOWN");
+					statementInsertUser.executeUpdate();
+					try(ResultSet rs = statementInsertUser.getGeneratedKeys())
 					{
-						try(FileInputStream fis = new FileInputStream(file))
+						if(rs.next())
 						{
-							int version = fis.read();
-							byte[] data = new byte[(int) (file.length() - 1)];
-							int readCount = fis.read(data);
-							if(file.length() - 1 != readCount) plugin.getLogger().warning("Problem reading file, read " + readCount + " of " + (file.length() - 1) + " bytes.");
 							statementInsertBackpack.setInt(1, rs.getInt(1));
-							statementInsertBackpack.setBytes(2, data);
-							statementInsertBackpack.setInt(3, version);
+							statementInsertBackpack.setBytes(2, stored.data());
+							statementInsertBackpack.setInt(3, stored.serializerVersion());
 							statementInsertBackpack.executeUpdate();
 							migrated++;
 						}
 					}
 				}
-
+				connection.commit();
+				return new MigrationResult("Migrated " + migrated + " backpacks from Files to " + newDb.getClass().getSimpleName(), MigrationResult.MigrationResultType.SUCCESS);
 			}
-			return new MigrationResult("Migrated " + migrated + " backpacks from Files to " + newDb.getClass().getSimpleName(), MigrationResult.MigrationResultType.SUCCESS);
-		}
-		finally
-		{
-			newDb.close();
+			catch(Exception e)
+			{
+				try { connection.rollback(); } catch(SQLException rollbackFailure) { e.addSuppressed(rollbackFailure); }
+				throw e;
+			}
 		}
 	}
 }

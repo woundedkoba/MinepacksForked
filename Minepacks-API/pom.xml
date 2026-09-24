@@ -17,9 +17,8 @@
 	<dependencies>
 		<dependency>
 			<groupId>at.pcgamingfreaks</groupId>
-			<artifactId>PluginLib</artifactId>
-			<version>${pcgfPluginLibVersion}</version>
-			<scope>provided</scope>
+			<artifactId>Minepacks-EmbeddedLib</artifactId>
+			<version>${revision}</version>
 		</dependency>
 	</dependencies>
 
@@ -54,7 +53,8 @@
 						</goals>
 						<configuration>
 							<additionalparam>-Xdoclint:none</additionalparam>
-							<source>8</source>
+							<source>25</source>
+							<detectOfflineLinks>false</detectOfflineLinks>
 						</configuration>
 					</execution>
 				</executions>

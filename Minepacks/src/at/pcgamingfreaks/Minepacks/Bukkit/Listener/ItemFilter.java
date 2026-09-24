@@ -61,12 +61,10 @@ public class ItemFilter extends MinepacksListener implements at.pcgamingfreaks.M
 		filter.addFilteredNames(plugin.getConfiguration().getItemFilterNames());
 		filter.addFilteredLore(plugin.getConfiguration().getItemFilterLore());
 
-		/*if[STANDALONE]
+
 		itemNameResolver = new ItemNameResolver();
 		itemNameResolver.load(plugin, plugin.getConfiguration());
-		else[STANDALONE]*/
-		itemNameResolver = at.pcgamingfreaks.PluginLib.Bukkit.ItemNameResolver.getInstance();
-		/*end[STANDALONE]*/
+
 
 		messageNotAllowedInBackpack = plugin.getLanguage().getMessage("Ingame.NotAllowedInBackpack").placeholders(new Placeholder("ItemName", new ItemNamePlaceholderProcessor(itemNameResolver)), new Placeholder("ItemDisplayName", new ItemDisplayNamePlaceholderProcessor(itemNameResolver)));
 	}

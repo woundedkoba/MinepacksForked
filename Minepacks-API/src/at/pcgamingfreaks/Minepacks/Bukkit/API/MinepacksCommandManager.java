@@ -17,14 +17,18 @@
 
 package at.pcgamingfreaks.Minepacks.Bukkit.API;
 
+import at.pcgamingfreaks.Command.HelpData;
+import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Collection;
 
 @SuppressWarnings("unused")
 public interface MinepacksCommandManager
 {
 	/**
 	 * Registers a new sub-command for /backpack.
-	 * This function is only available if the plugin is not running in standalone mode!
+	 * Available from the self-contained MinepacksForked plugin.
 	 *
 	 * @param command The command that should be registered.
 	 */
@@ -32,9 +36,15 @@ public interface MinepacksCommandManager
 
 	/**
 	 * Unregisters a sub-command for /backpack.
-	 * This function is only available if the plugin is not running in standalone mode!
+	 * Available from the self-contained MinepacksForked plugin.
 	 *
 	 * @param command The command that should be unregistered.
 	 */
 	void unRegisterSubCommand(@NotNull MinepacksCommand command);
+
+	/** Renders the configured backpack help format for a command. */
+	default void sendHelp(@NotNull CommandSender target, @NotNull String mainCommandAlias, @NotNull Collection<HelpData> data)
+	{
+		for(HelpData entry : data) target.sendMessage(entry.getDescription());
+	}
 }

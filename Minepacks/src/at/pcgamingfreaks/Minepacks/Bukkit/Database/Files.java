@@ -17,7 +17,6 @@
 
 package at.pcgamingfreaks.Minepacks.Bukkit.Database;
 
-import at.pcgamingfreaks.Minepacks.Bukkit.API.Callback;
 import at.pcgamingfreaks.Minepacks.Bukkit.Backpack;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import at.pcgamingfreaks.UUID.UuidConverter;
@@ -29,8 +28,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -127,12 +124,16 @@ public class Files extends Database
 	@Override
 	public void saveBackpack(Backpack backpack)
 	{
-		File save = new File(saveFolder, getFileName(backpack.getOwnerId()));
-		try(FileOutputStream fos = new FileOutputStream(save))
+		byte[] data = itsSerializer.serialize(backpack.getInventory());
+		if(data == null || data.length == 0)
 		{
-			fos.write(itsSerializer.getUsedSerializer());
-			fos.write(itsSerializer.serialize(backpack.getInventory()));
-			fos.flush();
+			plugin.getLogger().severe("Failed to serialize backpack for " + backpack.getOwner().getName() + "; file left unchanged.");
+			return;
+		}
+		File save = new File(saveFolder, getFileName(backpack.getOwnerId()));
+		try
+		{
+			BackpackFileStore.write(save, itsSerializer.getUsedSerializer(), data);
 		}
 		catch(Exception e)
 		{
@@ -141,17 +142,22 @@ public class Files extends Database
 	}
 
 	@Override
-	protected void loadBackpack(final OfflinePlayer player, final Callback<Backpack> callback)
+	protected void loadBackpack(final OfflinePlayer player, final LoadCallback callback)
 	{ //TODO this needs to be done async!
 		File save = new File(saveFolder, getFileName(player.getUniqueId()));
+		if(!save.exists())
+		{
+			callback.missing();
+			return;
+		}
 		ItemStack[] itemStacks = readFile(itsSerializer, save, plugin.getLogger());
 		if(itemStacks != null)
 		{
-			callback.onResult(new Backpack(player, itemStacks, -1));
+			callback.found(new Backpack(player, itemStacks, -1));
 		}
 		else
 		{
-			callback.onFail();
+			callback.failed();
 		}
 	}
 
@@ -159,13 +165,10 @@ public class Files extends Database
 	{
 		if(file.exists())
 		{
-			try(FileInputStream fis = new FileInputStream(file))
+			try
 			{
-				int version = fis.read();
-				byte[] out = new byte[(int) (file.length() - 1)];
-				int readCount = fis.read(out);
-				if(file.length() - 1 != readCount) logger.warning("Problem reading file, read " + readCount + " of " + (file.length() - 1) + " bytes.");
-				return itsSerializer.deserialize(out, version);
+				BackpackFileStore.StoredBackpack stored = BackpackFileStore.read(file);
+				return itsSerializer.deserialize(stored.data(), stored.serializerVersion()).orElse(null);
 			}
 			catch(Exception e)
 			{

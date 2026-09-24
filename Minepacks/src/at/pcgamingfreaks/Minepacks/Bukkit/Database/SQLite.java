@@ -17,14 +17,12 @@
 
 package at.pcgamingfreaks.Minepacks.Bukkit.Database;
 
-import at.pcgamingfreaks.Database.ConnectionProvider.ConnectionProvider;
 import at.pcgamingfreaks.Database.ConnectionProvider.SQLiteConnectionProvider;
 import at.pcgamingfreaks.Database.DBTools;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import at.pcgamingfreaks.Version;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.Connection;
@@ -40,9 +38,9 @@ public class SQLite extends SQL
 	}
 
 	//TODO add cooldown sync table
-	public SQLite(final @NotNull Minepacks plugin, final @Nullable ConnectionProvider connectionProvider)
+	public SQLite(final @NotNull Minepacks plugin)
 	{
-		super(plugin, (connectionProvider == null) ? new SQLiteConnectionProvider(plugin.getLogger(), plugin.getDescription().getName(), getDbFile(plugin)) : connectionProvider);
+		super(plugin, new SQLiteConnectionProvider(plugin.getLogger(), plugin.getDescription().getName(), getDbFile(plugin)));
 	}
 
 	@Override

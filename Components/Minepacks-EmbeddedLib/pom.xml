@@ -1,0 +1,45 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>at.pcgamingfreaks</groupId>
+        <artifactId>Minepacks-Parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <artifactId>Minepacks-EmbeddedLib</artifactId>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>at.pcgamingfreaks</groupId>
+            <artifactId>PCGF_PluginLibForked</artifactId>
+            <version>0.0.1</version>
+            <scope>system</scope>
+            <systemPath>${maven.multiModuleProjectDirectory}/vendor/pcgf-pluginlib/pcgf-pluginlib-0.0.1.jar</systemPath>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <executions>
+                    <execution>
+                        <id>embed-library</id>
+                        <phase>process-resources</phase>
+                        <goals><goal>unpack-dependencies</goal></goals>
+                        <configuration>
+                            <includeGroupIds>at.pcgamingfreaks</includeGroupIds>
+                            <includeArtifactIds>PCGF_PluginLibForked</includeArtifactIds>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <excludes>at/pcgamingfreaks/PluginLib/**,at/pcgamingfreaks/Bungee/**,plugin.yml,paper-plugin.yml,META-INF/*.SF,META-INF/*.RSA</excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

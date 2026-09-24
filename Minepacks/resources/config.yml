@@ -65,7 +65,8 @@ FullInventory:
 
 # Database settings
 Database:
-  # Database type. MySQL, SQLite, Files (data is stored in files, one file per user) or Shared (use shared connection pool from PCGF PluginLib)
+  # Database type: MySQL, SQLite, or Files (one file per user).
+  # If upgrading from Shared/Global/External, copy the old connection settings to SQL below and change Type to MySQL before starting.
   Type: SQLite
   # Auto database cleanup settings
   AutoCleanup:
@@ -217,8 +218,8 @@ InventoryManagement:
 
 Misc:
   AutoUpdate:
-    # When auto update is disabled you still can use the build in update function manually with /backpack update
-    Enabled: true
+    # Disabled in development builds. /backpack update can be used manually after a fork release is published.
+    Enabled: false
     Channel: ${updateChannel}
   # Enable this option if you are using a BungeeCord setup and want to share the plugin's database across multiple servers.
   UseBungeeCord: false

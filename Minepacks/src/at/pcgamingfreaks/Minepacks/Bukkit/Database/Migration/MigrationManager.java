@@ -20,10 +20,9 @@ package at.pcgamingfreaks.Minepacks.Bukkit.Database.Migration;
 import at.pcgamingfreaks.ConsoleColor;
 import at.pcgamingfreaks.Minepacks.Bukkit.Database.*;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
-import at.pcgamingfreaks.Reflection;
-import org.bukkit.event.HandlerList;
 
 import java.util.Locale;
+import java.util.logging.Level;
 
 public class MigrationManager
 {
@@ -44,84 +43,73 @@ public class MigrationManager
 		}
 		final Database db = plugin.getDatabase();
 
-		//region Disable the plugin except for the database
 		try
 		{
 			plugin.getLogger().info("Unloading plugin for migration");
-			Reflection.setValue(plugin, "database", null); // Hack to prevent the unload of the database
-			//noinspection ConstantConditions
-			Reflection.getMethod(Minepacks.class, "unload").invoke(plugin); // Unload plugin
-			HandlerList.unregisterAll(db); // Disable events for database
-			Reflection.setValue(plugin, "database", db);
+			plugin.suspendForMigration();
 		}
 		catch(Exception e)
 		{
 			plugin.getLogger().warning(ConsoleColor.RED + "Failed to unload plugin! Please restart your server!" + ConsoleColor.RESET);
-			e.printStackTrace();
+			plugin.getLogger().log(Level.SEVERE, "Failed to suspend Minepacks for migration.", e);
 			callback.onResult(new MigrationResult("Failed to unload plugin! Please restart your server!", MigrationResult.MigrationResultType.ERROR));
 			return;
 		}
-		//endregion
-		//region Migrate data
 		Minepacks.getScheduler().runAsync(task -> {
-			MigrationResult migrationResult = null;
+			MigrationResult result;
 			try
 			{
 				plugin.getLogger().info("Start migrating data to new database");
-				migrationResult = migration.migrate();
-				plugin.getConfiguration().setDatabaseType(targetDatabaseType);
+				result = migration.migrate();
+				if(result.getType() == MigrationResult.MigrationResultType.SUCCESS)
+				{
+					plugin.getConfiguration().setDatabaseType(targetDatabaseType);
+				}
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace();
-				plugin.getLogger().warning(ConsoleColor.RED + "There was a problem migrating from " + db.getClass().getName() + " to " + targetDatabaseType + ConsoleColor.RESET);
-				callback.onResult(new MigrationResult("There was a problem migrating from " + db.getClass().getName() + " to " + targetDatabaseType + ". Please check the console for details.", MigrationResult.MigrationResultType.ERROR));
+				plugin.getLogger().log(Level.SEVERE, "There was a problem migrating from " + db.getClass().getName() + " to " + targetDatabaseType, e);
+				result = new MigrationResult("There was a problem migrating from " + db.getClass().getName() + " to " + targetDatabaseType + ". Please check the console for details.", MigrationResult.MigrationResultType.ERROR);
 			}
-
-			//region Start the plugin again
-			final MigrationResult migrationResultFinal = migrationResult;
-			Minepacks.getScheduler().runNextTick(task1 -> {
-				db.close();
-				// No need to reload the config
-				try
-				{
-					plugin.getLogger().info("Migration is done, loading the plugin again.");
-					//noinspection ConstantConditions
-					Reflection.getMethod(Minepacks.class, "load").invoke(plugin); // load the plugin again
-					plugin.getLogger().info(ConsoleColor.GREEN + "Plugin loaded successful and is ready to use again." + ConsoleColor.RESET);
-					if(migrationResultFinal != null) callback.onResult(migrationResultFinal);
-				}
-				catch(Exception e)
-				{
-					plugin.getLogger().warning(ConsoleColor.RED + "Failed to start plugin again!" + ConsoleColor.RESET);
-					e.printStackTrace();
-				}
-			});
-			//endregion
+			MigrationResult completed = result;
+			Minepacks.getScheduler().runNextTick(nextTick -> finishMigration(db, completed, callback));
 		});
-		//endregion
+	}
+
+	private void finishMigration(Database source, MigrationResult result, MigrationCallback callback)
+	{
+		try
+		{
+			source.close();
+		}
+		catch(Exception e)
+		{
+			plugin.getLogger().log(Level.SEVERE, "Failed to close the source database after migration.", e);
+			result = new MigrationResult("Failed to close the source database after migration. Please restart your server!", MigrationResult.MigrationResultType.ERROR);
+		}
+		try
+		{
+			plugin.getLogger().info("Migration is done, loading the plugin again.");
+			plugin.loadServices();
+			if(plugin.getDatabase() == null) throw new IllegalStateException("Target database did not initialize after migration");
+			plugin.getLogger().info(ConsoleColor.GREEN + "Plugin loaded successful and is ready to use again." + ConsoleColor.RESET);
+		}
+		catch(Exception e)
+		{
+			plugin.getLogger().log(Level.SEVERE, "Failed to start plugin after migration.", e);
+			result = new MigrationResult("Failed to start plugin after migration. Please restart your server!", MigrationResult.MigrationResultType.ERROR);
+		}
+		callback.onResult(result);
 	}
 
 	public Migration getMigrationPerformer(String targetDatabaseType)
 	{
 		try
 		{
-			boolean global = false;
 			if(targetDatabaseType.toLowerCase(Locale.ROOT).equals("external") || targetDatabaseType.toLowerCase(Locale.ROOT).equals("global") || targetDatabaseType.toLowerCase(Locale.ROOT).equals("shared"))
 			{
-				/*if[STANDALONE]
-				plugin.getLogger().warning(ConsoleColor.RED + "The shared database connection option is not available in standalone mode!" + ConsoleColor.RESET);
+				plugin.getLogger().warning(ConsoleColor.RED + "PluginLib shared database pools are no longer available. Configure Minepacks MySQL settings before migration." + ConsoleColor.RESET);
 				return null;
-				else[STANDALONE]*/
-				at.pcgamingfreaks.PluginLib.Database.DatabaseConnectionPool pool = at.pcgamingfreaks.PluginLib.Bukkit.PluginLib.getInstance().getDatabaseConnectionPool();
-				if(pool == null)
-				{
-					plugin.getLogger().warning(ConsoleColor.RED + "The shared connection pool is not initialized correctly!" + ConsoleColor.RESET);
-					return null;
-				}
-				targetDatabaseType = pool.getDatabaseType().toLowerCase(Locale.ROOT);
-				global = true;
-				/*end[STANDALONE]*/
 			}
 			switch(targetDatabaseType.toLowerCase(Locale.ROOT))
 			{
@@ -132,12 +120,12 @@ public class MigrationManager
 					return new SQLtoFilesMigration(plugin, (SQL) plugin.getDatabase());
 				case "mysql":
 					if(plugin.getDatabase() instanceof MySQL) return null;
-					if(plugin.getDatabase() instanceof SQL) return new SQLtoSQLMigration(plugin, (SQL) plugin.getDatabase(), "mysql", global);
-					else return new FilesToSQLMigration(plugin, (Files) plugin.getDatabase(), "mysql", global);
+					if(plugin.getDatabase() instanceof SQL) return new SQLtoSQLMigration(plugin, (SQL) plugin.getDatabase(), "mysql");
+					else return new FilesToSQLMigration(plugin, (Files) plugin.getDatabase(), "mysql");
 				case "sqlite":
 					if(plugin.getDatabase() instanceof SQLite) return null;
-					if(plugin.getDatabase() instanceof SQL) return new SQLtoSQLMigration(plugin, (SQL) plugin.getDatabase(), "sqlite", global);
-					else return new FilesToSQLMigration(plugin, (Files) plugin.getDatabase(), "sqlite", global);
+					if(plugin.getDatabase() instanceof SQL) return new SQLtoSQLMigration(plugin, (SQL) plugin.getDatabase(), "sqlite");
+					else return new FilesToSQLMigration(plugin, (Files) plugin.getDatabase(), "sqlite");
 				default: plugin.getLogger().warning(String.format(Database.MESSAGE_UNKNOWN_DB_TYPE,  plugin.getConfiguration().getDatabaseType())); return null;
 			}
 		}

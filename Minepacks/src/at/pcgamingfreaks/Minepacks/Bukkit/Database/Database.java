@@ -18,7 +18,6 @@
 package at.pcgamingfreaks.Minepacks.Bukkit.Database;
 
 import at.pcgamingfreaks.ConsoleColor;
-import at.pcgamingfreaks.Database.ConnectionProvider.ConnectionProvider;
 import at.pcgamingfreaks.Minepacks.Bukkit.API.Callback;
 import at.pcgamingfreaks.Minepacks.Bukkit.Backpack;
 import at.pcgamingfreaks.Minepacks.Bukkit.Database.UnCacheStrategies.OnDisconnect;
@@ -36,13 +35,20 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public abstract class Database implements Listener
 {
+	/** Storage distinguishes a missing record from a record that could not be read. */
+	protected interface LoadCallback
+	{
+		void found(Backpack backpack);
+		void missing();
+		void failed();
+	}
+
 	public static final String MESSAGE_UNKNOWN_DB_TYPE = ConsoleColor.RED + "Unknown database type \"%s\"!" + ConsoleColor.RESET;
 
 	protected final Minepacks plugin;
@@ -87,28 +93,16 @@ public abstract class Database implements Listener
 		try
 		{
 			String dbType = plugin.getConfiguration().getDatabaseType();
-			ConnectionProvider connectionProvider = null;
 			if(dbType.equals("shared") || dbType.equals("external") || dbType.equals("global"))
 			{
-				/*if[STANDALONE]
-				plugin.getLogger().warning(ConsoleColor.RED + "The shared database connection option is not available in standalone mode!" + ConsoleColor.RESET);
+				plugin.getLogger().warning(ConsoleColor.RED + "PluginLib shared database pools are no longer available. Copy the old connection and table settings to Minepacks, then set Database.Type to mysql." + ConsoleColor.RESET);
 				return null;
-				else[STANDALONE]*/
-				at.pcgamingfreaks.PluginLib.Database.DatabaseConnectionPool pool = at.pcgamingfreaks.PluginLib.Bukkit.PluginLib.getInstance().getDatabaseConnectionPool();
-				if(pool == null)
-				{
-					plugin.getLogger().warning(ConsoleColor.RED + "The shared connection pool is not initialized correctly!" + ConsoleColor.RESET);
-					return null;
-				}
-				dbType = pool.getDatabaseType().toLowerCase(Locale.ROOT);
-				connectionProvider = pool.getConnectionProvider();
-				/*end[STANDALONE]*/
 			}
 			Database database;
 			switch(dbType)
 			{
-				case "mysql": database = new MySQL(plugin, connectionProvider); break;
-				case "sqlite": database = new SQLite(plugin, connectionProvider); break;
+				case "mysql": database = new MySQL(plugin); break;
+				case "sqlite": database = new SQLite(plugin); break;
 				case "flat":
 				case "file":
 				case "files":
@@ -118,7 +112,10 @@ public abstract class Database implements Listener
 			database.init();
 			return database;
 		}
-		catch(IllegalStateException ignored) {}
+		catch(IllegalStateException e)
+		{
+			plugin.getLogger().log(Level.SEVERE, "Failed to initialize database.", e);
+		}
 		catch(Exception e)
 		{
 			plugin.getLogger().log(Level.SEVERE, "Failed to initialize database.", e);
@@ -131,20 +128,26 @@ public abstract class Database implements Listener
 		writeBackup(backpack.getOwner().getName(), getPlayerFormattedUUID(backpack.getOwnerId()), itsSerializer.getUsedSerializer(), itsSerializer.serialize(backpack.getInventory()));
 	}
 
-	protected void writeBackup(@Nullable String userName, @NotNull String userIdentifier, final int usedSerializer, final byte[] data)
+	protected boolean writeBackup(@Nullable String userName, @NotNull String userIdentifier, final int usedSerializer, final byte[] data)
 	{
+		if(data == null || data.length == 0)
+		{
+			plugin.getLogger().severe("Failed to serialize backpack backup for " + userIdentifier + "; no backup file was written.");
+			return false;
+		}
 		if(userIdentifier.equalsIgnoreCase(userName)) userName = null;
 		if(userName != null) userIdentifier = userName + "_" + userIdentifier;
 		final File save = new File(backupFolder, userIdentifier + "_" + System.currentTimeMillis() + Files.EXT);
-		try(FileOutputStream fos = new FileOutputStream(save))
+		try
 		{
-			fos.write(usedSerializer);
-			fos.write(data);
+			BackpackFileStore.write(save, usedSerializer, data);
 			plugin.getLogger().info("Backup of the backpack has been created: " + save.getAbsolutePath());
+			return true;
 		}
 		catch(Exception e)
 		{
 			plugin.getLogger().warning(ConsoleColor.RED + "Failed to write backup! Error: " + e.getMessage() + ConsoleColor.RESET);
+			return false;
 		}
 	}
 
@@ -196,7 +199,7 @@ public abstract class Database implements Listener
 		return (player == null) ? null : backpacks.get(player.getUniqueId());
 	}
 
-	public void getBackpack(final OfflinePlayer player, final Callback<at.pcgamingfreaks.Minepacks.Bukkit.API.Backpack> callback, final boolean createNewOnFail)
+	public void getBackpack(final OfflinePlayer player, final Callback<at.pcgamingfreaks.Minepacks.Bukkit.API.Backpack> callback, final boolean createNewIfMissing)
 	{
 		if(player == null || player.getClass().getName().contains("NPC"))
 		{
@@ -205,30 +208,7 @@ public abstract class Database implements Listener
 		Backpack lbp = backpacks.get(player.getUniqueId());
 		if(lbp == null)
 		{
-			loadBackpack(player, new Callback<Backpack>()
-			{
-				@Override
-				public void onResult(Backpack backpack)
-				{
-					backpacks.put(player.getUniqueId(), backpack);
-					callback.onResult(backpack);
-				}
-
-				@Override
-				public void onFail()
-				{
-					if(createNewOnFail)
-					{
-						Backpack backpack = new Backpack(player);
-						backpacks.put(player.getUniqueId(), backpack);
-						callback.onResult(backpack);
-					}
-					else
-					{
-						callback.onFail();
-					}
-				}
-			});
+			loadAndCache(player, callback, createNewIfMissing);
 		}
 		else
 		{
@@ -258,21 +238,40 @@ public abstract class Database implements Listener
 	{
 		if(player != null && backpacks.get(player.getUniqueId()) == null)
 		{
-			loadBackpack(player, new Callback<Backpack>()
-			{
-				@Override
-				public void onResult(Backpack backpack)
-				{
-					backpacks.put(player.getUniqueId(), backpack);
-				}
-
-				@Override
-				public void onFail()
-				{
-					backpacks.put(player.getUniqueId(), new Backpack(player));
-				}
-			});
+			loadAndCache(player, backpack -> {}, true);
 		}
+	}
+
+	private void loadAndCache(final OfflinePlayer player, final Callback<at.pcgamingfreaks.Minepacks.Bukkit.API.Backpack> callback, final boolean createNewIfMissing)
+	{
+		loadBackpack(player, new LoadCallback()
+		{
+			@Override
+			public void found(Backpack backpack)
+			{
+				backpacks.put(player.getUniqueId(), backpack);
+				callback.onResult(backpack);
+			}
+
+			@Override
+			public void missing()
+			{
+				if(!createNewIfMissing)
+				{
+					callback.onFail();
+					return;
+				}
+				Backpack backpack = new Backpack(player);
+				backpacks.put(player.getUniqueId(), backpack);
+				callback.onResult(backpack);
+			}
+
+			@Override
+			public void failed()
+			{
+				callback.onFail();
+			}
+		});
 	}
 
 	@EventHandler
@@ -296,5 +295,5 @@ public abstract class Database implements Listener
 
 	public void getCooldown(final Player player, final Callback<Long> callback) {}
 
-	protected abstract void loadBackpack(final OfflinePlayer player, final Callback<Backpack> callback);
+	protected abstract void loadBackpack(final OfflinePlayer player, final LoadCallback callback);
 }

@@ -18,36 +18,23 @@
 package at.pcgamingfreaks.Minepacks.Bukkit.API;
 
 import at.pcgamingfreaks.Bukkit.Command.SubCommand;
-import at.pcgamingfreaks.Bukkit.Message.Message;
 import at.pcgamingfreaks.Command.HelpData;
 
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
+import java.util.Objects;
 
 /**
- * Only available if the plugin is not running in standalone mode!
+ * Available from the self-contained MinepacksForked plugin.
  */
 public abstract class MinepacksCommand extends SubCommand
 {
-	@SuppressWarnings("FieldMayBeFinal")
-	private static MinepacksPlugin minepacksPlugin = null; // Will be set by reflection
-	@SuppressWarnings("FieldMayBeFinal")
-	private static Object minepacksCommandManager = null;
-	@SuppressWarnings("FieldMayBeFinal")
-	private static Method showHelp = null; // Will be set by reflection
-	@SuppressWarnings("FieldMayBeFinal") // Will be overwritten by reflection
-	private static Message messageNoPermission   = new Message(ChatColor.RED + "You don't have the permission to do that.");
-	@SuppressWarnings("FieldMayBeFinal") // Will be overwritten by reflection
-	private static Message messageNotFromConsole = new Message(ChatColor.RED + "This command can't be used from console!");
 	protected final JavaPlugin plugin;
 	private final boolean playerOnly;
 
@@ -98,13 +85,14 @@ public abstract class MinepacksCommand extends SubCommand
 	//endregion
 
 	/**
-	 * Gets the instance of the marriage master plugin.
+	 * Gets the active Minepacks plugin.
 	 *
-	 * @return The instance of the marriage master plugin.
+	 * @return The active Minepacks plugin.
 	 */
 	protected @NotNull MinepacksPlugin getMinepacksPlugin()
 	{
-		return minepacksPlugin;
+		if(plugin instanceof MinepacksPlugin minepacks) return minepacks;
+		return Objects.requireNonNull(MinepacksPlugin.getInstance(), "Minepacks must be enabled before using its commands");
 	}
 
 	//region Command Stuff
@@ -121,11 +109,11 @@ public abstract class MinepacksCommand extends SubCommand
 	{
 		if(playerOnly && !(sender instanceof Player))
 		{
-			messageNotFromConsole.send(sender);
+			getMinepacksPlugin().getNotFromConsoleMessage().send(sender);
 		}
 		else if(getPermission() != null && !sender.hasPermission(getPermission()))
 		{
-			messageNoPermission.send(sender);
+			getMinepacksPlugin().getNoPermissionMessage().send(sender);
 		}
 		else
 		{
@@ -147,11 +135,11 @@ public abstract class MinepacksCommand extends SubCommand
 	{
 		if(playerOnly && !(sender instanceof Player))
 		{
-			messageNotFromConsole.send(sender);
+			getMinepacksPlugin().getNotFromConsoleMessage().send(sender);
 		}
 		else if(getPermission() != null && !sender.hasPermission(getPermission()))
 		{
-			messageNoPermission.send(sender);
+			getMinepacksPlugin().getNoPermissionMessage().send(sender);
 		}
 		else
 		{
@@ -183,14 +171,13 @@ public abstract class MinepacksCommand extends SubCommand
 	@Override
 	public void showHelp(final @NotNull CommandSender sendTo, final @NotNull String usedMainCommandAlias)
 	{
-		try
+		MinepacksCommandManager manager = getMinepacksPlugin().getCommandManager();
+		if(manager == null)
 		{
-			showHelp.invoke(minepacksCommandManager, sendTo, usedMainCommandAlias, doGetHelp(sendTo));
+			plugin.getLogger().severe("Failed to show help: Minepacks command manager is not ready.");
+			return;
 		}
-		catch(Exception e)
-		{
-			plugin.getLogger().log(Level.SEVERE, e, () -> "Failed to show help for command " + usedMainCommandAlias);
-		}
+		manager.sendHelp(sendTo, usedMainCommandAlias, doGetHelp(sendTo));
 	}
 
 	/**

@@ -40,9 +40,8 @@ public class VersionCommand extends MinepacksCommand
 	{
 		sender.sendMessage("##### Start Minepacks version info #####");
 		sender.sendMessage(minepacksVersion);
-		/*if_not[STANDALONE]*/
-		sender.sendMessage("PCGF PluginLib: " + at.pcgamingfreaks.PluginLib.Bukkit.PluginLib.getInstance().getVersion());
-		/*end[STANDALONE]*/
+
+
 		sender.sendMessage("Server: " +  plugin.getServer().getVersion());
 		sender.sendMessage("Java: " + System.getProperty("java.version"));
 		sender.sendMessage("#####  End Minepacks version info  #####");

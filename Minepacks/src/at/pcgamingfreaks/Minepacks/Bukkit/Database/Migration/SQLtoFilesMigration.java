@@ -18,16 +18,13 @@
 package at.pcgamingfreaks.Minepacks.Bukkit.Database.Migration;
 
 import at.pcgamingfreaks.Minepacks.Bukkit.Database.Files;
+import at.pcgamingfreaks.Minepacks.Bukkit.Database.BackpackFileStore;
 import at.pcgamingfreaks.Minepacks.Bukkit.Database.SQL;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
-import at.pcgamingfreaks.Reflection;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -37,29 +34,24 @@ public class SQLtoFilesMigration extends Migration
 	private final String sqlQuery;
 	private final File saveFolder;
 
-	protected SQLtoFilesMigration(@NotNull Minepacks plugin, @NotNull SQL oldDb) throws InvocationTargetException, IllegalAccessException
+	protected SQLtoFilesMigration(@NotNull Minepacks plugin, @NotNull SQL oldDb)
 	{
 		super(plugin, oldDb);
 		@Language("SQL") String query = "SELECT {FieldUUID},{FieldBPITS},{FieldBPVersion} FROM {TablePlayers} INNER JOIN {TableBackpacks} ON {FieldPlayerID}={FieldBPOwner};";
-		//noinspection ConstantConditions
-		sqlQuery = (String) Reflection.getMethod(SQL.class, "replacePlaceholders", String.class).invoke(oldDb, query);
+		sqlQuery = oldDb.formatMigrationQuery(query);
 		saveFolder = new File(this.plugin.getDataFolder(), Files.FOLDER_NAME);
 		if(!saveFolder.exists() && !saveFolder.mkdirs()) plugin.getLogger().warning("Failed to create save folder (" + saveFolder.getAbsolutePath() + ").");
 	}
 
 	@Override
-	public @Nullable MigrationResult migrate() throws Exception
+	public @NotNull MigrationResult migrate() throws Exception
 	{
 		int migrated = 0;
 		try(Connection connection = ((SQL) oldDb).getConnection(); Statement st = connection.createStatement(); ResultSet rs = st.executeQuery(sqlQuery))
 		{
 			while(rs.next())
 			{
-				try(FileOutputStream fos = new FileOutputStream(new File(saveFolder, rs.getString(1) + Files.EXT)))
-				{
-					fos.write(rs.getInt(3));
-					fos.write(rs.getBytes(2));
-				}
+				BackpackFileStore.write(new File(saveFolder, rs.getString(1) + Files.EXT), rs.getInt(3), rs.getBytes(2));
 				migrated++;
 			}
 		}

@@ -1,55 +1,17 @@
 UpdateProviders:
-  Bukkit:
-    Type: Bukkit
-    ProjectId: 83445
-  Spigot:
-    Type: Spigot
-    ProjectId: 19286
-    Filename: "minepacks.jar"
-  GitHub:
+  GitHubFork:
     Type: GitHub
-    Owner: GeorgH93
-    Repo: Minepacks
-  GitHubStandalone:
-    Type: GitHub
-    Owner: GeorgH93
-    Repo: Minepacks
-    JarSearch: ".*-Standalone\\.jar"
-  GitHubRelease:
-    Type: GitHub
-    Owner: GeorgH93
-    Repo: Minepacks
-    JarSearch: ".*-Release\\.jar"
-  JenkinsMaster:
-    Type: Jenkins
-    Server: "https://ci.pcgamingfreaks.at"
-    Job: "Minepacks"
-  JenkinsMasterStandalone:
-    Type: Jenkins
-    Server: "https://ci.pcgamingfreaks.at"
-    Job: "Minepacks"
-    Filter: ".*-Standalone.jar"
-  JenkinsMasterRelease:
-    Type: Jenkins
-    Server: "https://ci.pcgamingfreaks.at"
-    Job: "Minepacks"
-    Filter: ".*-Release.jar"
-  JenkinsDev:
-    Type: Jenkins
-    Server: "https://ci.pcgamingfreaks.at"
-    Job: "Minepacks Dev"
+    Owner: woundedkoba
+    Repo: MinepacksForked
+    JarSearch: "MinepacksForked-.*\\.jar"
 
 UpdateChannels:
   Release:
-    Release: [ Bukkit, Spigot, GitHubRelease ]
-    Standalone: [ GitHubStandalone ]
-    Normal: [ GitHub ]
+    Release: [GitHubFork]
   Master:
-    Release: [ JenkinsMasterRelease ]
-    Standalone: [ JenkinsMasterStandalone ]
-    Normal: [ JenkinsMaster ]
+    Release: [GitHubFork]
   Dev:
-    Normal: [ JenkinsDev ]
+    Release: [GitHubFork]
 
 DefaultChannel: "${updateChannel}"
 ReleaseType: "${releaseType}"

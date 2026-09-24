@@ -20,7 +20,6 @@ package at.pcgamingfreaks.Minepacks.Bukkit.Database.Migration;
 import at.pcgamingfreaks.Minepacks.Bukkit.Database.Database;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class Migration
 {
@@ -33,5 +32,5 @@ public abstract class Migration
 		this.oldDb = oldDb;
 	}
 
-	public abstract @Nullable MigrationResult migrate() throws Exception;
+	public abstract @NotNull MigrationResult migrate() throws Exception;
 }

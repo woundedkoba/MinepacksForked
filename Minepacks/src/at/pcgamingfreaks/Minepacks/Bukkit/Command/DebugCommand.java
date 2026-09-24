@@ -30,7 +30,6 @@ import at.pcgamingfreaks.Minepacks.Bukkit.API.MinepacksCommand;
 import at.pcgamingfreaks.Minepacks.Bukkit.Minepacks;
 import at.pcgamingfreaks.Minepacks.Bukkit.Permissions;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -118,7 +117,7 @@ public class DebugCommand extends MinepacksCommand
 
 		Minepacks.getScheduler().runAtEntityLater(sender, () -> sender.performCommand("backpack"), 5*20L);
 		Minepacks.getScheduler().runAtEntityLater(sender, () -> Bukkit.getPluginManager().callEvent(new ClickEvent(sender.getOpenInventory(), InventoryType.SlotType.QUICKBAR, InventoryUtils.getPlayerTopInventory(sender).getSize() + 27, ClickType.LEFT, InventoryAction.PICKUP_ALL)), 10*20L);
-		Minepacks.getScheduler().runAtEntityLater(sender, sender::closeInventory, 20*20L);
+		Minepacks.getScheduler().runAtEntityLater(sender, (Runnable) sender::closeInventory, 20*20L);
 		Minepacks.getScheduler().runLater(() -> {
 			try
 			{
@@ -241,7 +240,9 @@ public class DebugCommand extends MinepacksCommand
 		public void setCancelled(boolean toCancel)
 		{
 			super.setCancelled(toCancel);
-			writer.append(ExceptionUtils.getStackTrace(new Exception("Click event has been canceled!!!")));
+			StringWriter trace = new StringWriter();
+			new Exception("Click event has been canceled!!!").printStackTrace(new PrintWriter(trace));
+			writer.append(trace.toString());
 			writer.append("\n\n");
 		}
 	}

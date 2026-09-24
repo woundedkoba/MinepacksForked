@@ -50,9 +50,8 @@ public class UpdateCommand extends MinepacksCommand
 		if(MCVersion.isNewerOrEqualThan(MCVersion.getFromVersionName(MagicValues.MIN_MC_VERSION_FOR_UPDATES)))
 		{
 			messageCheckingForUpdates.send(sender);
-			/*if_not[STANDALONE]*/
-			((at.pcgamingfreaks.PluginLib.Bukkit.PluginLib) at.pcgamingfreaks.PluginLib.Bukkit.PluginLib.getInstance()).getUpdater().update(); // Make the PluginLib check for updates too
-			/*end[STANDALONE]*/
+
+
 			((Minepacks) plugin).update(result -> {
 				switch(result)
 				{

@@ -92,19 +92,13 @@ public class Minepacks extends JavaPlugin implements MinepacksPlugin, IPlugin
 	@Override
 	public boolean isRunningInStandaloneMode()
 	{
-		/*if[STANDALONE]
-		return true;
-		else[STANDALONE]*/
 		return false;
-		/*end[STANDALONE]*/
 	}
 
 	@Override
 	public void onEnable()
 	{
 		checkOldDataFolder();
-
-		if(!checkPCGF_PluginLib()) return;
 
 		if (MCVersion.isNewerOrEqualThan(MCVersion.MC_1_19_3) && ServerType.isPaperCompatible())
 		{
@@ -121,7 +115,7 @@ public class Minepacks extends JavaPlugin implements MinepacksPlugin, IPlugin
 		if(!checkMcVersion()) return;
 
 		lang = new Language(this);
-		load();
+		loadServices();
 
 		getLogger().info(StringUtils.getPluginEnabledMessage(getDescription().getName()));
 	}
@@ -133,34 +127,13 @@ public class Minepacks extends JavaPlugin implements MinepacksPlugin, IPlugin
 			getLogger().warning("Paper support is experimental! Use at your own risk!");
 			getLogger().warning("No guarantee for data integrity! Backup constantly!");
 		}
-		// DO NOT REMOVE THIS! This is protecting your data! To add support for a new version, update PCGF PluginLib and then update the last version check!
-		if (MCVersion.is(MCVersion.UNKNOWN) || !MCVersion.isUUIDsSupportAvailable() || MCVersion.isNewerThan(MCVersion.MC_NMS_26_2_R1))
+		// Keep the version guard aligned with the embedded serializer implementation.
+		if (MCVersion.is(MCVersion.UNKNOWN) || !MCVersion.isUUIDsSupportAvailable() || MCVersion.isNewerThan(MCVersion.MC_NMS_26_3_R1))
 		{
 			this.warnOnVersionIncompatibility();
 			this.setEnabled(false);
 			return false;
 		}
-		return true;
-	}
-
-	private boolean checkPCGF_PluginLib()
-	{
-		// Check if running as standalone edition
-		/*if[STANDALONE]
-		getLogger().info("Starting Minepacks in standalone mode!");
-		if(getServer().getPluginManager().isPluginEnabled("PCGF_PluginLib"))
-		{
-			getLogger().info("You do have the PCGF_PluginLib installed. You may consider switching to the default version of the plugin to reduce memory load and unlock additional features.");
-		}
-		else[STANDALONE]*/
-		// Not standalone so we should check the version of the PluginLib
-		if(at.pcgamingfreaks.PluginLib.Bukkit.PluginLib.getInstance().getVersion().olderThan(new Version(MagicValues.MIN_PCGF_PLUGIN_LIB_VERSION)))
-		{
-			getLogger().warning("You are using an outdated version of the PCGF PluginLib! Please update it!");
-			setEnabled(false);
-			return false;
-		}
-		/*end[STANDALONE]*/
 		return true;
 	}
 
@@ -193,7 +166,8 @@ public class Minepacks extends JavaPlugin implements MinepacksPlugin, IPlugin
 		updater.update(updateResponseCallback);
 	}
 
-	private void load()
+	/** Starts services after startup, migration, or database recovery. */
+	public void loadServices()
 	{
 		updater.setChannel(config.getUpdateChannel());
 		lang.load(config);
@@ -267,11 +241,28 @@ public class Minepacks extends JavaPlugin implements MinepacksPlugin, IPlugin
 		itemFilter = null;
 	}
 
+	/** Stops plugin services while retaining the source database for a migration. */
+	public void suspendForMigration()
+	{
+		Database source = database;
+		if(source == null) throw new IllegalStateException("No source database is available for migration");
+		database = null;
+		try
+		{
+			unload();
+			HandlerList.unregisterAll(source);
+		}
+		finally
+		{
+			database = source;
+		}
+	}
+
 	public void reload()
 	{
 		unload();
 		config.reload();
-		load();
+		loadServices();
 	}
 
 	public void warnOnVersionIncompatibility()
@@ -356,11 +347,19 @@ public class Minepacks extends JavaPlugin implements MinepacksPlugin, IPlugin
 	@Override
 	public MinepacksCommandManager getCommandManager()
 	{
-		/*if[STANDALONE]
-		return null;
-		else[STANDALONE]*/
 		return commandManager;
-		/*end[STANDALONE]*/
+	}
+
+	@Override
+	public @NotNull Message getNoPermissionMessage()
+	{
+		return messageNoPermission;
+	}
+
+	@Override
+	public @NotNull Message getNotFromConsoleMessage()
+	{
+		return messageNotFromConsole;
 	}
 
 	public int getBackpackPermSize(Player player)

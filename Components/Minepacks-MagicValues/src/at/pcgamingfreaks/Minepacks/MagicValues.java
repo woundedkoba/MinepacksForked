@@ -26,19 +26,17 @@ public class MagicValues
 {
 	public static final int LANG_VERSION;
 	public static final int CONFIG_VERSION;
-	public static final String MIN_PCGF_PLUGIN_LIB_VERSION;
 	public static final String MIN_MC_VERSION_FOR_UPDATES = "1.8";
 
 	static
 	{
-		String pcgfPluginLibVersion = "99999", langVersion = "0", configVersion = "0";
+		String langVersion = "0", configVersion = "0";
 
 		try(InputStream propertiesStream = MagicValues.class.getClassLoader().getResourceAsStream("Minepacks.properties"))
 		{
 			Properties properties = new Properties();
 			properties.load(propertiesStream);
 
-			pcgfPluginLibVersion = properties.getProperty("PCGFPluginLibVersion");
 			langVersion = properties.getProperty("LanguageFileVersion");
 			configVersion = properties.getProperty("ConfigFileVersion");
 		}
@@ -46,7 +44,6 @@ public class MagicValues
 		{
 			e.printStackTrace();
 		}
-		MIN_PCGF_PLUGIN_LIB_VERSION = pcgfPluginLibVersion;
 		// Try to parse the version strings, fall back to a known min version
 		LANG_VERSION = tryParse(langVersion, 20);
 		CONFIG_VERSION = tryParse(configVersion, 33);

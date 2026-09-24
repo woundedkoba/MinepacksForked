@@ -15,6 +15,7 @@ $RECYCLE.BIN/
 *.msp
 
 *.bat
+*.sh
 
 # =========================
 # Operating System Files
@@ -49,10 +50,8 @@ Temporary Items
 *.tmp
 
 
-*.sh
-
 # =========================
-# IDE Project Files
+# IDE and project metadata
 # =========================
 *.classpath
 *.project
@@ -61,5 +60,44 @@ target/
 /bin/
 *.iml
 /.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
 
 .flattened-pom.xml
+
+# Hidden/tooling directories and generated project metadata
+.codex/
+.agents/
+.cache/
+.*.tmp
+
+# Build and packaging output
+out/
+build/
+*.jar
+*.war
+*.zip
+
+# Graphify generated knowledge-graph output
+graphify-out/
+
+# Local server/runtime data
+logs/
+plugins/
+world/
+world_nether/
+world_the_end/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+.idea/
+
+# Reproducible single-plugin build inputs and CI checks
+!scripts/verify-package.sh
+!scripts/rebuild-embedded-serializer.sh
+!vendor/pcgf-pluginlib/pcgf-pluginlib-0.0.1.jar

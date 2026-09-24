@@ -7,15 +7,13 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<revision>2.5.9.1</revision>
+		<revision>0.1.0-SNAPSHOT</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<configFileVersion>35</configFileVersion>
 		<languageFileVersion>21</languageFileVersion>
-		<pcgfPluginLibVersion>1.0.40.8-SNAPSHOT</pcgfPluginLibVersion>
-
-		<bukkitVersion>1.15.2-R0.1-SNAPSHOT</bukkitVersion>
+		<paperVersion>26.3.build.40-alpha</paperVersion>
 		<mavenShade.version>3.6.2</mavenShade.version>
 		<lombok.version>1.18.42</lombok.version>
 
@@ -29,22 +27,22 @@
 	</properties>
 
 	<scm>
-		<connection>scm:git:git@github.com:GeorgH93/Minepacks.git</connection>
-		<developerConnection>scm:git:git@github.com:GeorgH93/Minepacks.git</developerConnection>
-		<url>git@github.com:GeorgH93/Minepacks.git</url>
+		<connection>scm:git:https://github.com/woundedkoba/MinepacksForked.git</connection>
+		<developerConnection>scm:git:git@github.com:woundedkoba/MinepacksForked.git</developerConnection>
+		<url>https://github.com/woundedkoba/MinepacksForked</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub</system>
-		<url>https://github.com/GeorgH93/Minepacks/issues</url>
+		<url>https://github.com/woundedkoba/MinepacksForked/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>jenkins</system>
-		<url>https://ci.pcgamingfreaks.at/job/Minepacks/</url>
+		<system>GitHub Actions</system>
+		<url>https://github.com/woundedkoba/MinepacksForked/actions</url>
 	</ciManagement>
 
 	<name>Minepacks-Parent</name>
 	<description>Minepacks is a backpack plugin with different backpack sizes, multi-language support and SQLite and MySQL storage support.</description>
-	<url>https://www.spigotmc.org/resources/19286/</url>
+	<url>https://github.com/woundedkoba/MinepacksForked</url>
 	<inceptionYear>2014</inceptionYear>
 	<licenses>
 		<license>
@@ -63,6 +61,10 @@
 			<id>spigot-nexus</id>
 			<url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
 		</repository>
+		<repository>
+			<id>papermc</id>
+			<url>https://repo.papermc.io/repository/maven-public/</url>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -71,11 +73,11 @@
 			<artifactId>annotations</artifactId>
 			<version>23.1.0</version>
 		</dependency>
-		<!-- Bukkit -->
+		<!-- Paper 26.3 API -->
 		<dependency>
-			<groupId>org.bukkit</groupId>
-			<artifactId>bukkit</artifactId>
-			<version>${bukkitVersion}</version>
+			<groupId>io.papermc.paper</groupId>
+			<artifactId>paper-api</artifactId>
+			<version>${paperVersion}</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- Lombok -->
@@ -95,8 +97,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<release>25</release>
 					<encoding>UTF-8</encoding>
 					<annotationProcessorPaths>
 						<path>
@@ -163,33 +164,10 @@
 	</build>
 
 	<modules>
+		<module>Components/Minepacks-EmbeddedLib</module>
 		<module>Minepacks-API</module>
 		<module>Components/Minepacks-MagicValues</module>
 		<module>Minepacks</module>
 	</modules>
 
-	<profiles>
-		<profile>
-			<id>Release</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-
-			<modules>
-				<module>Components/Minepacks-BadRabbit-Bukkit</module>
-				<module>Components/Minepacks-Bootstrap-Paper</module>
-			</modules>
-		</profile>
-	</profiles>
-
-	<distributionManagement>
-		<repository>
-			<id>releases</id>
-			<url>https://repo.pcgamingfreaks.at/repository/maven-releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>snapshots</id>
-			<url>https://repo.pcgamingfreaks.at/repository/maven-snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>

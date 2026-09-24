@@ -1,121 +1,54 @@
-<!-- Variables (this block will not be visible in the readme -->
-[banner]: https://pcgamingfreaks.at/images/minepacks.png
-[spigot]: https://www.spigotmc.org/resources/19286/
-[spigotRatingImg]: https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=rating&query=%24.rating.average&suffix=%20%2F%205&url=https%3A%2F%2Fapi.spiget.org%2Fv2%2Fresources%2F19286
-[spigotDownloadsImg]: https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=downloads%20%28spigotmc.org%29&query=%24.downloads&url=https%3A%2F%2Fapi.spiget.org%2Fv2%2Fresources%2F19286
-[bukkit]: https://dev.bukkit.org/projects/minepacks
-[bukkitDownloadsImg]: https://cf.way2muchnoise.eu/full_minepacks_downloads.svg
-[versionsImg]: https://cf.way2muchnoise.eu/versions/minepacks.svg
-[issues]: https://github.com/GeorgH93/Minepacks/issues
-[wiki]: https://github.com/GeorgH93/Minepacks/wiki
-[wikiFAQ]: https://github.com/GeorgH93/Minepacks/wiki/FAQ
-[wikiPermissions]: https://github.com/GeorgH93/Minepacks/wiki/Permissions
-[release]: https://github.com/GeorgH93/Minepacks/releases/latest
-[releaseImg]: https://img.shields.io/github/release/GeorgH93/Minepacks.svg?label=github%20release
-[license]: https://github.com/GeorgH93/Minepacks/blob/master/LICENSE
-[licenseImg]: https://img.shields.io/github/license/GeorgH93/Minepacks.svg
-[ci]: https://ci.pcgamingfreaks.at/job/Minepacks/
-[ciImg]: https://ci.pcgamingfreaks.at/job/Minepacks/badge/icon
-[ciDev]: https://ci.pcgamingfreaks.at/job/Minepacks%20Dev/
-[ciDevImg]: https://ci.pcgamingfreaks.at/job/Minepacks%20Dev/badge/icon
-[apiVersionImg]: https://img.shields.io/badge/dynamic/xml.svg?label=api-version&query=%2F%2Frelease[1]&url=https%3A%2F%2Frepo.pcgamingfreaks.at%2Frepository%2Fmaven-releases%2Fat%2Fpcgamingfreaks%2FMinepacks-API%2Fmaven-metadata.xml
-[api]: https://github.com/GeorgH93/Minepacks/tree/master/Minepacks-API
-[apiJavaDoc]: https://ci.pcgamingfreaks.at/job/Minepacks%20API/javadoc/
-[apiBuilds]: https://ci.pcgamingfreaks.at/job/Minepacks%20API/
-[bugReports]: https://github.com/GeorgH93/Minepacks/issues?q=is%3Aissue+is%3Aopen+label%3Abug
-[bugReportsImg]: https://img.shields.io/github/issues/GeorgH93/Minepacks/bug.svg?label=bug%20reports
-[reportBug]: https://github.com/GeorgH93/Minepacks/issues/new?labels=bug&template=bug.md
-[featureRequests]: https://github.com/GeorgH93/Minepacks/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement
-[featureRequestsImg]: https://img.shields.io/github/issues/GeorgH93/Minepacks/enhancement.svg?label=feature%20requests&color=informational
-[requestFeature]: https://github.com/GeorgH93/Minepacks/issues/new?labels=enhancement&template=feature.md
-[config]: https://github.com/GeorgH93/Minepacks/blob/master/Minepacks/resources/config.yml
-[pcgfPluginLib]: https://github.com/GeorgH93/PCGF_PluginLib
-[pcgfPluginLibAdvantages]: https://github.com/GeorgH93/Minepacks/wiki/Build-and-Mode-comparison#Advantages-of-using-the-PCGF-PluginLib
-[languages]: https://github.com/GeorgH93/Minepacks/tree/master/Minepacks/resources/lang
-<!-- End of variables block -->
+# MinepacksForked
 
-[![Logo][banner]][spigot]
+MinepacksForked is a maintained fork of the Minepacks backpack plugin for **Paper 26.3 and Java 25**. The runtime plugin is still named `Minepacks`, so existing data under `plugins/Minepacks/` remains in place. The Maven artifact and JAR are named `MinepacksForked`.
 
-Minepacks is a free and reliable backpack plugin for minecraft server running bukkit or spigot.
+The project now builds **one self-contained plugin JAR**. The Minepacks code uses embedded PCGF utility, database, command, version, scheduler, and item serializer classes. A separate PCGF_PluginLibForked plugin is no longer needed at runtime. The embedded source snapshot and the maintained Paper 26.3 serializer override live under [`vendor/pcgf-pluginlib`](vendor/pcgf-pluginlib/README.md).
 
-[![ciImg]][ci] [![releaseImg]][release]
-[![apiVersionImg]][api] [![licenseImg]][license] [![spigotRatingImg]][spigot]
+## Features
 
-[![featureRequestsImg]][featureRequests] [![bugReportsImg]][bugReports]
-[![spigotDownloadsImg]][spigot] [![bukkitDownloadsImg]][bukkit]
+- Permission-based backpack sizes, filters, and automatic item collection
+- Files, SQLite, and MySQL storage using the existing Minepacks formats
+- Language files, updater, and public Minepacks API
+- NBT item restoration through the bundled version-specific serializer
 
-## Features:
-* [Configuration][config]
-* Backpack size controlled by [permissions][wikiPermissions]
-* Auto item-collect on full inventory (can be enabled in the config)
-* Multiple storage back-ends (Files, SQLite, MySQL)
-* Multi language support ([multiple language file included][languages])
-* Item filter (block items from being stored in the backpack)
-* Preserves the NBT data of items (everything that can be stored in a chest can be stored in the backpack)
-* Support for name changing / UUIDs
-* Auto-updater
-* [API][api] for developers
+## Requirements
 
-## Requirements:
-### Runtime requirements:
-* Java 8
-* Bukkit, Spigot or Paper for Minecraft 1.8 or newer ![versionsImg]
-* (Optional) [PCGF PluginLib][pcgfPluginLib] ([Advantages of using the PCGF PluginLib][pcgfPluginLibAdvantages])
+- Paper 26.3 and Java 25 for the maintained target
+- Maven 3 and JDK 25 to build
+- No PCGF_PluginLibForked runtime plugin
 
-### Build requirements:
+Paper's `-alpha` suffix is part of the published 26.3 artifact coordinate; it is not used here as a measure of release readiness. Other Bukkit or Paper versions may work through inherited code and bundled serializers but are not part of this fork's verified target. See the [seven-build Paper API review](docs/Paper%20API%20Release%20Review.md).
 
-* JDK for Java 8
-* Maven 3
-* git
+## Build
 
-## Build from source:
-The plugin can be build in 3 different configurations.  
-All the details about the different build configs and runtime modes can be found [here](https://github.com/GeorgH93/Minepacks/wiki/Build-and-Mode-comparison).
-
-### Normal version:
+```bash
+export JAVA_HOME=/server-data/minecraft/java/java25
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+mvn -B clean verify
+scripts/verify-package.sh Minepacks/target/MinepacksForked-*.jar
 ```
-git clone https://github.com/GeorgH93/Minepacks.git
-cd Minepacks
-mvn package
-```
-The final file will be in the `Minepacks/target` folder, named `Minepacks-<CurrentVersion>.jar`.
 
-### Standalone version:
-This version works without the PCGF-PluginLib, however some API features are not available.
-```
-git clone https://github.com/GeorgH93/Minepacks.git
-cd Minepacks
-mvn package -P Standalone
-```
-The final file will be in the `Minepacks/target` folder, named `Minepacks-<CurrentVersion>-Standalone.jar`.
+Install the single `Minepacks/target/MinepacksForked-0.1.0-SNAPSHOT.jar` on the server. The build does not require a sibling PCGF repository or a previously installed Standalone classifier. The API and embedded library are built in the same Maven reactor.
 
-### Release version:
-This is the version of the plugin published on dev.bukkit.org and spigotmc.org.
-```
-git clone https://github.com/GeorgH93/Minepacks.git
-cd Minepacks
-mvn clean install -P Standalone
-mvn clean package -P Release
-```
-The final file will be in the `Minepacks/target` folder, named `Minepacks-<CurrentVersion>-Release.jar`.
+## Upgrade from the two-plugin setup
 
-## API:
-Minepacks V2 comes with an API that allows you to interact with this plugin.
-If you think there is something missing in the API feel free to open a [feature request][requestFeature].
-Please do not access data of the plugin in any other way than through the provided API, the inner workings will change and I won't keep track of what you are using in your plugin.
-For more details about the API please check the following links:
+1. Stop the server and back up the Minepacks database and `plugins/Minepacks/`.
+2. Replace the old Minepacks JAR with this single JAR. Remove `PCGF_PluginLibForked` only after checking whether other plugins use it.
+3. Keep the `plugins/Minepacks/` directory and existing database tables.
+4. If `Database.Type` was `shared`, `global`, or `external`, configure Minepacks' own MySQL connection and set `Database.Type: mysql` before starting. The old PluginLib-managed shared pool is no longer present. Confirm the database and table names match the old configuration.
+5. Check a populated backpack and an empty backpack, then restart and check them again before opening access to all players.
 
-[Source Code & Details][api] ⚫ [JavaDoc][apiJavaDoc] ⚫ [Build Server][apiBuilds]
+Serialized empty backpacks now load normally. A decoder returning failure leaves the SQL record untouched, attempts a recovery backup, and never creates a replacement backpack in cache. File storage and file migrations use the same versioned format reader and atomic replacement writer, so a failed serialization does not truncate an existing backpack.
 
-## Support:
-* [Wiki][wiki]
-* [Issue tracker][issues]
-  * [new feature request][requestFeature]
-  * [new bug report][reportBug]
-* [Faq][wikiFAQ]
+See the [dependency migration review](docs/Dependency%20Migration.md), [compatibility matrix](docs/Compatibility%20Matrix.md), [backpack recovery guide](docs/Backpack%20Recovery.md), and [release checklist](docs/Release%20Checklist.md).
 
-## Links:
-* [Spigot][spigot] - [![spigotDownloadsImg]][spigot]
-* [CurseForge][bukkit] - [![bukkitDownloadsImg]][bukkit]
-* [Build Server - Release Builds ![ciImg]][ci]
-* [Build Server - Dev Builds ![ciDevImg]][ciDev]
+## Release version
+
+The next release candidate is **v0.1.0**; the Maven revision remains `0.1.0-SNAPSHOT` until the runtime checklist passes. The unfinished v0.0.1 work never established a stable public release. A v1.0.0 compatibility promise would be premature while representative MySQL, SQLite, upgrade, and restart restore tests remain outstanding. This recommendation does not depend on Paper's artifact suffix.
+
+## API
+
+The `Minepacks-API` Maven module provides `MinepacksPlugin`, backpack access, events, and command interfaces. The runtime name remains `Minepacks`, so `Bukkit.getPluginManager().getPlugin("Minepacks")` continues to find it. See [Minepacks-API/README.md](Minepacks-API/README.md).
+
+MinepacksForked is GPLv3 licensed and derives from [GeorgH93/Minepacks](https://github.com/GeorgH93/Minepacks) and [GeorgH93/PCGF_PluginLib](https://github.com/GeorgH93/PCGF_PluginLib).

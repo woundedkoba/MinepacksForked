@@ -17,6 +17,8 @@
 
 package at.pcgamingfreaks.Minepacks.Bukkit.API;
 
+import at.pcgamingfreaks.Bukkit.Message.Message;
+import org.bukkit.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -41,9 +43,9 @@ public interface MinepacksPlugin
 	}
 
 	/**
-	 * Checks if the plugin is running in standalone mode. Some features and API functions are not available in standalone mode!
+	 * Legacy compatibility flag. The self-contained fork exposes the full command API and returns false.
 	 *
-	 * @return True if the plugin is running in standalone mode.
+	 * @return False in MinepacksForked.
 	 */
 	boolean isRunningInStandaloneMode();
 
@@ -117,9 +119,20 @@ public interface MinepacksPlugin
 	/**
 	 * Gets the command manager of the Minepacks plugin.
 	 *
-	 * @return The command manager instance. null if the plugin is running in standalone mode
+	 * @return The command manager instance once Minepacks has enabled.
 	 */
 	@Nullable MinepacksCommandManager getCommandManager();
+
+	/** Messages used by Minepacks commands after language configuration loads. */
+	default @NotNull Message getNoPermissionMessage()
+	{
+		return new Message(ChatColor.RED + "You don't have the permission to do that.");
+	}
+
+	default @NotNull Message getNotFromConsoleMessage()
+	{
+		return new Message(ChatColor.RED + "This command can't be used from console!");
+	}
 
 	/**
 	 * Checks if the player is allowed to open a backpack based on is permissions and current game-mode.

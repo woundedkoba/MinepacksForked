@@ -1,12 +1,12 @@
-name: "${project.name}"
+name: "${pluginName}"
 author: "${author}"
 website: "${project.url}"
 main: "${mainClass}"
 description: "${project.description}"
 version: "${pluginVersion}"
-api-version: "1.13"
-depend: [${dependencies}]
-softdepend: [MVdWPlaceholderAPI, PlaceholderAPI ${soft-dependencies}]
+api-version: "26.3"
+depend: []
+softdepend: [MVdWPlaceholderAPI, PlaceholderAPI]
 folia-supported: true
 
 permissions:

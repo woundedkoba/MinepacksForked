@@ -31,10 +31,16 @@ import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
+import java.util.Optional;
 import java.util.logging.Level;
 
 public abstract class SQL extends Database
 {
+	/** Column names needed when copying stored rows between database engines. */
+	public record MigrationColumns(String playerId, String playerName, String playerUuid,
+	                               String backpackOwner, String backpackItems, String backpackVersion,
+	                               String backpackLastUpdate) {}
+
 	private final ConnectionProvider dataSource;
 
 	protected String tablePlayers, tableBackpacks, tableCooldowns; // Table Names
@@ -169,6 +175,17 @@ public abstract class SQL extends Database
 				.replace("{TableCooldowns}", tableCooldowns).replace("{FieldCDPlayer}", fieldCdPlayer).replace("{FieldCDTime}", fieldCdTime); // Cooldowns
 	}
 
+	public final String formatMigrationQuery(@Language("SQL") String query)
+	{
+		return replacePlaceholders(query);
+	}
+
+	public final MigrationColumns migrationColumns()
+	{
+		return new MigrationColumns(fieldPlayerID, fieldPlayerName, fieldPlayerUUID,
+				fieldBpOwner, fieldBpIts, fieldBpVersion, fieldBpLastUpdate);
+	}
+
 	protected void runStatementAsync(final String query, final Object... args)
 	{
 		Minepacks.getScheduler().runAsync(task -> runStatement(query, args));
@@ -201,6 +218,11 @@ public abstract class SQL extends Database
 	public void saveBackpack(final Backpack backpack)
 	{
 		final byte[] data = itsSerializer.serialize(backpack.getInventory());
+		if(data == null || data.length == 0)
+		{
+			plugin.getLogger().severe("Failed to serialize backpack for " + backpack.getOwner().getName() + "; database record left unchanged.");
+			return;
+		}
 		final int id = backpack.getOwnerDatabaseId(), usedSerializer = itsSerializer.getUsedSerializer();
 		final String nameOrUUID = getPlayerFormattedUUID(backpack.getOwnerId()), name = backpack.getOwner().getName();
 
@@ -243,52 +265,38 @@ public abstract class SQL extends Database
 	}
 
 	@Override
-	protected void loadBackpack(final OfflinePlayer player, final Callback<Backpack> callback)
+	protected void loadBackpack(final OfflinePlayer player, final LoadCallback callback)
 	{
 		Minepacks.getScheduler().runAsync(task -> {
 			try(Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(queryGetBP))
 			{
 				final String playerUUID = getPlayerFormattedUUID(player);
 				ps.setString(1, playerUUID);
-				final int bpID, version;
-				final byte[] data;
 				try(ResultSet rs = ps.executeQuery())
 				{
-					if(rs.next())
+					if(!rs.next())
 					{
-						bpID = rs.getInt(fieldBpOwner);
-						version = rs.getInt(fieldBpVersion);
-						data = rs.getBytes(fieldBpIts);
+						Minepacks.getScheduler().runNextTick(nextTick -> callback.missing());
+						return;
 					}
-					else
+					int bpID = rs.getInt(fieldBpOwner), version = rs.getInt(fieldBpVersion);
+					byte[] data = rs.getBytes(fieldBpIts);
+					Optional<ItemStack[]> items = itsSerializer.deserialize(data, version);
+					if(items.isEmpty())
 					{
-						bpID = -1;
-						version = 0;
-						data = null;
+						boolean backedUp = writeBackup(player.getName(), playerUUID, version, data);
+						plugin.getLogger().severe("Could not deserialize backpack for " + player.getName() + ". The original database row was left unchanged; recovery backup " + (backedUp ? "created." : "could not be created."));
+						Minepacks.getScheduler().runNextTick(nextTick -> callback.failed());
+						return;
 					}
+					ItemStack[] restoredItems = items.get();
+					Minepacks.getScheduler().runNextTick(nextTick -> callback.found(new Backpack(player, restoredItems, bpID)));
 				}
-
-				ItemStack[] its = itsSerializer.deserialize(data, version);
-				if (data != null && data.length != 0 && its == null)
-				{
-					writeBackup(player.getName(), playerUUID, version, data);
-				}
-				final Backpack backpack = (its != null) ? new Backpack(player, its, bpID) : null;
-				Minepacks.getScheduler().runNextTick(task1 -> {
-					if(backpack != null)
-					{
-						callback.onResult(backpack);
-					}
-					else
-					{
-						callback.onFail();
-					}
-				});
 			}
 			catch(SQLException e)
 			{
 				plugin.getLogger().log(Level.SEVERE, "Failed to load backpack! Error: {0}", e.getMessage());
-				Minepacks.getScheduler().runNextTick(task1 -> callback.onFail());
+				Minepacks.getScheduler().runNextTick(nextTick -> callback.failed());
 			}
 		});
 	}
